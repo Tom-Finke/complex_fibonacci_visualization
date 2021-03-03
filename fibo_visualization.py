@@ -1,5 +1,5 @@
+import matplotlib
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 import math
 import numpy as np
 from mpl_toolkits.axisartist.axislines import SubplotZero
@@ -12,7 +12,16 @@ def draw(graphs: list, stepsize: float = 0.001, axes={"x": {"name": "Re(z)"}, "y
          linewidth: int = 3, points: list = []):
 
     fig = plt.figure()
-    ax = fig.add_subplot(111)
+    # Eruieren ob der Graph 3d oder 2d wird. 3D wenn mind. 1 Graph ein z_out parameter besitzt
+    three_dimensional = True if True in [
+        True for graph in graphs if "z_out" in graph] else False
+
+    if(three_dimensional):
+        ax = fig.gca(projection='3d')
+        ax.set_zlabel(axes["z"]["name"]
+                      if "z" in axes and "name" in axes["z"] else "z", fontsize=15)
+    else:
+        ax = fig.add_subplot(111)
     # Beschriftung der Achsen einfügen und deren Position anpassen
     ax.set_xlabel(
         axes["x"]["name"] if "x" in axes and "name" in axes["x"] else "x", fontsize=15)
@@ -20,15 +29,10 @@ def draw(graphs: list, stepsize: float = 0.001, axes={"x": {"name": "Re(z)"}, "y
     ax.set_ylabel(axes["y"]["name"] if "y" in axes and "name" in axes["y"] else "y",
                   rotation='horizontal', fontsize=15)
     ax.yaxis.set_label_coords(0.5, 1.02)
-
-    # Eruieren ob der Graph 3d oder 2d wird. 3D wenn mind. 1 Graph ein z_out parameter besitzt
-    three_dimensional = True if True in [
-        True for graph in graphs if "z_out" in graph] else False
-
+    ax.xaxis.labelpad = 30
+    ax.yaxis.labelpad = 30
     if(three_dimensional):
-        ax = fig.gca(projection='3d')
-        ax.set_zlabel(axes[z]["name"]
-                      if "z" in axes and "name" in axes["z"] else "z")
+        ax.zaxis.labelpad = 30
 
     # Skala Beschriftungen formatieren
     if("x" in axes and "format" in axes["x"]):
@@ -41,9 +45,10 @@ def draw(graphs: list, stepsize: float = 0.001, axes={"x": {"name": "Re(z)"}, "y
         plt.gca().zaxis.set_major_formatter(
             mticker.FormatStrFormatter(axes["z"]["format"]))
     # Größer der Skala Striche anpassen
-    ax.tick_params(axis='x', labelsize=15, pad=10)
-    ax.tick_params(axis='y', labelsize=15, pad=20)
-    ax.tick_params(axis='z', labelsize=15, pad=20) if three_dimensional else 0
+    ax.tick_params(axis='x', labelsize=10, pad=10)
+    ax.tick_params(axis='y', labelsize=10, pad=20)
+    ax.tick_params(axis='z', labelsize=10, pad=20,
+                   ) if three_dimensional else 0
 
     # Wenn 2D Graph, Koordinatenachsen anpassen (Zu Ursprung verschieben) und Pfeile an Koordinatenachsen zeichnen
     if(not three_dimensional):
@@ -69,9 +74,10 @@ def draw(graphs: list, stepsize: float = 0.001, axes={"x": {"name": "Re(z)"}, "y
             y.append(graph["y_out"](i))
 
         # Wenn 3D: z-Achse befüllen und Scatterplot zeichnen
+            if(three_dimensional):
+                z.append(graph["z_out"](
+                    i) if "z_out" in graph else 0)  # Wenn der Graph keine z-Achse besitzt wird jeder z-wert mit 0 befüllt
         if(three_dimensional):
-            z.append(graph["z_out"](
-                i) if "z_out" in graph else 0)  # Wenn der Graph keine z-Achse besitzt wird jeder z-wert mit 0 befüllt
             ax.scatter(x, y, z, s=linewidth, zorder=1, color=graph["color"])
         else:
             ax.plot(x, y, linewidth=linewidth, color=graph["color"])
@@ -84,11 +90,14 @@ def draw(graphs: list, stepsize: float = 0.001, axes={"x": {"name": "Re(z)"}, "y
                 point[i]) else point[i]) if i in point else 0
 
         if(three_dimensional):
-            ax.scatter(point["x"], point["y"], point["z"], s=linewidth * 2,
-                       zorder=3, color=point["color"] if "color" in point else "C0")
+            ax.scatter(point["x"], point["y"], point["z"],
+                       s=point["size"] if "size" in point else linewidth * 2,
+                       zorder=3,
+                       color=point["color"] if "color" in point else "C0")
         else:
-            ax.plot(point["x"], point["y"], color=point["color"] if "color" in point else "C0", marker="o",
-                    linewidth=linewidth * 2)
+            ax.plot(point["x"], point["y"],
+                    color=point["color"] if "color" in point else "C0", marker="o",
+                    linewidth=point["size"] if "size" in point else linewidth * 2)
 
         if("annotation" in point and point["annotation"] == True):
             # Ergebnisse mit mehr als 3 Nachkommastellen werden zur Darstellung gerundet und als z.B. "3.141..."" angegeben
@@ -105,7 +114,7 @@ def draw(graphs: list, stepsize: float = 0.001, axes={"x": {"name": "Re(z)"}, "y
                      linestyle="dotted", linewidth=2, color=point["color"] if "color" in point else "C0")
             plt.plot([point["x"], point["x"]], [0, point["y"]],
                      linestyle="dotted", linewidth=2, color=point["color"] if "color" in point else "C0")
-
+    # plt.savefig("Output/test.svg")
     plt.show()
 
 
@@ -116,12 +125,27 @@ def binet(n):
     return complex((golden_ratio**n - (1 / -golden_ratio)**n) / math.sqrt(5))
 
 
-draw(graphs=[{"interval": [0, 5.7], "x_out": lambda x: binet(x).real, "y_out": lambda x: binet(x).imag, "color": "b"}
-             ],
-     stepsize=0.01,
-     axes={"x": {"name": "Re(z)"}, "y": {
-         "name": "Im(z)", "format": '%.1fi'}, },
-     points=[
-    {"x": binet(x).real, "y": binet(x).imag, "color": "red",
-     "lines": False, "annotation": True} for x in range(0, 6)
-])
+draw(graphs=[
+    {"interval": [-10, 10],
+     "x_out": lambda x: x,
+     "y_out": lambda x: binet(x).real,
+     "z_out": lambda x: binet(x).imag,
+     "color": "#1A74B2"}
+],
+    stepsize=0.01,
+    axes={
+    "x": {"name": "n"},
+    "y": {"name": "Re(z)"},
+    "z": {"name": "Im(z)", "format": '%.1fi'}
+},
+    points=[
+        {"x": x,
+         "y": binet(x).real,
+         "z": binet(x).imag,
+         "color": "red",
+         "lines": False,
+         "annotation": False,
+         "size": 20}
+        for x in range(-9, 9)
+]
+)

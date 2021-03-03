@@ -1,4 +1,16 @@
 This project visualizes complex fibonacci numbers both in 3d and 2d graphs.
+
+# Intsallation
+
+Install Dependencies:
+
+`pip(3) install -r requirements.txt`
+
+# Usage
+
+Run `python(3) fibo_visualization.py`
+You have to specify how your graph should look at the end of the script in advance
+
 Images can be saved by clicking the "save" icon in the pyplot gui created by the python script.
 
 A Graph can be created by calling the draw function of fibo_visualization.py
